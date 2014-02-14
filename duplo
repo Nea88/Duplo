@@ -1,0 +1,153 @@
+#/!/bin/bash
+set -e; 
+
+WP_SOURCE="https://github.com/Nea88/wordpress-skeleton.git"
+CONF_DIR="$HOME/.duplo"
+
+if [ $1 != "config:set" ] && [ $1 != "config:get" ] && [ $1 != "help" ]; then
+    if [ ! -f "$CONF_DIR/dev" ] || [ ! -f "$CONF_DIR/prod" ] || [ ! -f "$CONF_DIR/user" ] || [ ! -f "$CONF_DIR/testing" ]; then
+        echo "----! Config not finded, please use duplo config:set or duplo help"
+        exit 0
+    else
+        DEV_HOST=$(cat "$CONF_DIR/dev")
+        PROD_HOST=$(cat "$CONF_DIR/prod")
+        TEST_HOST=$(cat "$CONF_DIR/testing")
+        USER_NAME=$(cat "$CONF_DIR/user")
+    fi
+fi
+
+
+echo "bla"
+
+case "$1" in
+
+  create)
+    if [ -z $2 ]; then
+        echo "----! You must specify an app type"
+        exit 1
+    else
+        if [ -z $3 ]; then
+            echo "----! You must specify an app type"
+            exit 1
+    	else
+            if [ -d "./$3" ]; then
+                echo "---->App is already exist"
+    	        exit 1
+   	        else
+                APP=$3
+                case $2 in
+                    wp)		    
+            	       SOURCE=$WP_SOURCE
+                   ;;
+                esac
+
+	            if [ -z $SOURCE ]; then
+                    echo "----! Unknown app type"
+                    exit 1
+                fi
+
+    		    echo "----> Start creating $2 app"
+	            git clone $SOURCE $3
+
+ 	            cd $APP
+
+                if [ $2 = "wp" ]; then
+	                echo "$/home/dokku/.storages/$APP:/app/content/uploads:rw">PERSISTENT_STORAGE
+	                echo "PROJECT_NAME">PROJECT_NAME
+	                git add PROJECT_NAME PERSISTENT_STORAGE
+	                git commit -m 'Added project name and persistent storage files'
+                fi
+
+                git remote add dev dokku@$DEV_HOST:$APP-$USER_NAME
+                git remote add prod dokku@$PROD_HOST:$APP
+                git remote add testing dokku@$TEST_HOST:$APP
+                echo "----> $APP created"
+            fi
+        fi
+   fi
+  ;;
+
+  config:set)
+    if [ -z $2 ]; then
+        echo "----! You must specify type"
+        exit 1
+    fi
+    TYPE=$2
+    if [ $TYPE != "dev" ] && [ $TYPE != "testing" ] && [ $TYPE != "prod" ] && [ $TYPE != "user" ]; then
+        echo "----! Unknown config type"
+    fi
+    if [ -z $3 ]; then
+        echo "----! You must specify param"
+        exit 1
+    fi
+    if [ ! -d $CONF_DIR ]; then
+        mkdir -p $CONF_DIR
+    fi
+    echo $3 > $CONF_DIR/$TYPE
+  ;;
+
+  config:get)
+    if [ -z $2 ]; then
+        echo "----! You must specify type"
+        exit 1
+    fi
+    TYPE=$2
+    if [ $TYPE != "dev" ] && [ $TYPE != "testing" ] && [ $TYPE != "prod" ] && [ $TYPE != "user" ]; then
+        echo "----! Unknown config type"
+    fi
+    
+    if [ ! -f "$CONF_DIR/$TYPE" ]; then
+        echo "no params"
+        exit 0;
+    fi
+    CONF=$(cat "$CONF_DIR/$TYPE")
+    echo "$CONF"
+  ;;
+
+  deploy:dev)
+    if [ -f "./DOMAINS" ]; then
+        git rm DOMAINS
+        git commit -m 'domains file cant be in dev'
+        echo "Removed domains file"
+    fi
+    git push dev master
+  ;;
+
+  deploy:testing)
+    git push testing master
+  ;;
+  
+  deploy:prod)
+    if [ -z $2 ]; then
+        echo "----! You must specify domains"
+        exit 0
+    fi
+    if [ -f "./PROJECT_NAME" ]; then
+        git rm PROJECT_NAME
+        git commit -m 'PROJECT_NAME_name file cant be in dev'
+        echo "Removed PROJECT_NAME file"
+    fi
+    
+    if [ -f "./PERSISTENT_STORAGE" ]; then
+        git rm PERSISTENT_STORAGE
+        git commit -m 'PERSISTENT_STORAGE file cant be in dev'
+        echo "Removed PERSISTENT_STORAGE file"
+    fi
+        
+    echo $2 > DOMAINS
+    git add "./DOMAINS"
+    git commit -m 'domains file added'
+    echo "Added domains file"
+    git push production master
+  ;;
+  
+  help)   
+    echo "duplo config:set <type> <url|name>      type - <dev|testing|user|prod>"
+    echo "duplo config:get <type>                 type - <dev|testing|user|prod>"
+    echo "duplo create <appType> <appName>        creates projects appType-<wp>"
+    echo "duplo deploy:dev                	     deploys app in current folder type to development server"
+    echo "duplo deploy:testing                    deploys app in current folder type to testing server"
+    echo "duplo deploy:prod <prod domains>        deploys app in current folder type to production server"
+  ;;
+
+esac
