@@ -17,8 +17,6 @@ if [ $1 != "config:set" ] && [ $1 != "config:get" ] && [ $1 != "help" ]; then
 fi
 
 
-echo "bla"
-
 case "$1" in
 
   create)
