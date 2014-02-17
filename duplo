@@ -4,6 +4,11 @@ set -e;
 WP_SOURCE="https://github.com/Nea88/wordpress-skeleton.git"
 CONF_DIR="$HOME/.duplo"
 
+if [ ! $1 ]; then
+    duplo help
+    exit 0
+fi
+
 if [ $1 != "config:set" ] && [ $1 != "config:get" ] && [ $1 != "help" ]; then
     if [ ! -f "$CONF_DIR/dev" ] || [ ! -f "$CONF_DIR/prod" ] || [ ! -f "$CONF_DIR/user" ] || [ ! -f "$CONF_DIR/testing" ]; then
         echo "----! Config not finded, please use duplo config:set or duplo help"
