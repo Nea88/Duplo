@@ -55,7 +55,7 @@ case "$1" in
  	            cd $APP
 
                 if [ $2 = "wp" ]; then
-	                echo "$/home/dokku/.storages/$APP:/app/content/uploads:rw">PERSISTENT_STORAGE
+	                echo "/home/dokku/.storages/$APP:/app/content/uploads:rw">PERSISTENT_STORAGE
 	                echo $APP>PROJECT_NAME
 	                git add PROJECT_NAME PERSISTENT_STORAGE
 	                git commit -m 'Added project name and persistent storage files'
