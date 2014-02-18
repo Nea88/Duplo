@@ -1,7 +1,7 @@
 #Duplo
 
 ##Client-side script for creates and deploying projects in dokku.
-*now working only with wordpress
+*now working only with wordpress && docpad
 
 Install:
 windows:
@@ -27,7 +27,7 @@ $duplo config:set dev bla.com
 
 `duplo config:get <type>                 type - <dev|testing|prod|user>` shows param
 
-`duplo create <appType> <appName>        creates projects appType-<wp>` creates project by type
+`duplo create <appType> <appName>        creates projects appType-<wp|docpad>` creates project by type
 
 Example:
 ```

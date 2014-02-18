@@ -2,6 +2,7 @@
 set -e; 
 
 WP_SOURCE="https://github.com/Nea88/wordpress-skeleton.git"
+DOCPAD_SOURCE="https://github.com/Nea88/docpad-duplo.git"
 CONF_DIR="$HOME/.duplo"
 
 if [ ! $1 ]; then
@@ -42,6 +43,10 @@ case "$1" in
                     wp)		    
             	       SOURCE=$WP_SOURCE
                    ;;
+                   
+                   docpad)
+                       SOURCE=$DOCPAD_SOURCE
+                   ;;
                 esac
 
 	            if [ -z $SOURCE ]; then
@@ -61,6 +66,13 @@ case "$1" in
 	                
 	                git add PROJECT_NAME PERSISTENT_STORAGE
 	                git commit -m 'Added project name and persistent storage files'
+                fi
+
+                if [ $2 = "docpad" ]; then
+	                echo $APP>PROJECT_NAME
+	                docpad init
+	                git add .
+	                git commit -m 'Initial'
                 fi
 
                 git remote add dev dokku@$DEV_HOST:$APP-$USER_NAME
@@ -111,13 +123,16 @@ case "$1" in
 
   deploy:dev)
     APP=$(cat PROJECT_NAME)
+    
+    if [ -f "./wp-config.php" ]; then
+        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-$USER_NAME.tadatuta.org');|" wp-config.php
+        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-$USER_NAME.tadatuta.org/wp');|" wp-config.php
+        
+        git add wp-config.php
+        git commit -m 'Changed url to dev' || echo "----> Dev urls'"
 
-    sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-$USER_NAME.tadatuta.org');|" wp-config.php
-    sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-$USER_NAME.tadatuta.org/wp');|" wp-config.php
-
-    git add wp-config.php
-    git commit -m 'Changed url to dev' || echo "----> Dev urls'"
-
+    fi
+    
     if [ -f "./DOMAINS" ]; then
         git rm DOMAINS
         git commit -m 'domains file cant be in dev'
@@ -129,11 +144,14 @@ case "$1" in
 
   deploy:testing)
     APP=$(cat PROJECT_NAME)
-    sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP.tadatuta.org/wp');|" wp-config.php
-    sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP.tadatuta.org');|" wp-config.php
+    if [ -f "./wp-config.php" ]; then
+        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP.tadatuta.org/wp');|" wp-config.php
+        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP.tadatuta.org');|" wp-config.php
 
-    git add wp-config.php
-    git commit -m 'Changed url to testing' || echo "----> Testing urls'"
+        git add wp-config.php
+        git commit -m 'Changed url to testing' || echo "----> Testing urls'"
+    fi
+
     if [ -f "./DOMAINS" ]; then
         git rm DOMAINS
         git commit -m 'domains file cant be in dev'
@@ -147,23 +165,14 @@ case "$1" in
         echo "----! You must specify domains"
         exit 0
     fi
-    if [ -f "./PROJECT_NAME" ]; then
-        git rm PROJECT_NAME
-        git commit -m 'PROJECT_NAME_name file cant be in dev'
-        echo "Removed PROJECT_NAME file"
-    fi
 
-    if [ -f "./PERSISTENT_STORAGE" ]; then
-        git rm PERSISTENT_STORAGE
-        git commit -m 'PERSISTENT_STORAGE file cant be in dev'
-        echo "Removed PERSISTENT_STORAGE file"
-    fi
-
-    sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$2/wp');|" wp-config.php
-    sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$2');|" wp-config.php
+    if [ -f "./wp-config.php" ]; then
+        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$2/wp');|" wp-config.php
+        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$2');|" wp-config.php
     
-    git add wp-config.php
-    git commit -m 'Changed url to production' || echo "----> Production urls'"
+        git add wp-config.php
+        git commit -m 'Changed url to production' || echo "----> Production urls'"
+    fi
 
     echo $2 > DOMAINS
     git add "./DOMAINS"
@@ -175,7 +184,7 @@ case "$1" in
   help)   
     echo "duplo config:set <type> <url|name>      type - <dev|testing|user|prod>"
     echo "duplo config:get <type>                 type - <dev|testing|user|prod>"
-    echo "duplo create <appType> <appName>        creates projects appType-<wp>"
+    echo "duplo create <appType> <appName>        creates projects appType-<wp|docpad>"
     echo "duplo deploy:dev                	     deploys app in current folder type to development server"
     echo "duplo deploy:testing                    deploys app in current folder type to testing server"
     echo "duplo deploy:prod <prod domains>        deploys app in current folder type to production server"

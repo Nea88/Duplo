@@ -26,7 +26,7 @@ $duplo config:set dev bla.com
 
 `duplo config:get <type>                 type - <dev|testing|prod|user>` выводит текущее значение параметра
 
-`duplo create <appType> <appName>        creates projects appType-<wp>` создает типовой проект
+`duplo create <appType> <appName>        creates projects appType-<wp|docpad>` создает типовой проект
 
 Пример:
 ```
