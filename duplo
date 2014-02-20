@@ -11,17 +11,18 @@ if [ ! $1 ]; then
 fi
 
 if [ $1 != "config:set" ] && [ $1 != "config:get" ] && [ $1 != "help" ]; then
-    if [ ! -f "$CONF_DIR/dev" ] || [ ! -f "$CONF_DIR/prod" ] || [ ! -f "$CONF_DIR/user" ] || [ ! -f "$CONF_DIR/testing" ]; then
-        echo "----! Config not finded, please use duplo config:set or duplo help"
+    if [ ! -f "$CONF_DIR/user" ]; then
+        echo "----! User name not setted, please use duplo config:set user %user_name% or duplo help"
         exit 0
     else
-        DEV_HOST=$(cat "$CONF_DIR/dev")
-        PROD_HOST=$(cat "$CONF_DIR/prod")
-        TEST_HOST=$(cat "$CONF_DIR/testing")
         USER_NAME=$(cat "$CONF_DIR/user")
     fi
 fi
 
+GET_PROJECT_STUB()
+{
+git clone $1 $2
+}
 
 case "$1" in
 
@@ -40,44 +41,37 @@ case "$1" in
    	        else
                 APP=$3
                 case $2 in
-                    wp)		    
-            	       SOURCE=$WP_SOURCE
+                    wp)
+            	       GET_PROJECT_STUB $WP_SOURCE $APP
+            	       cd $APP
+	                   echo "/home/dokku/.storages/$APP:/app/content/uploads:rw">PERSISTENT_STORAGE
+
+	                   git add PERSISTENT_STORAGE
+	                   git commit -m 'Added persistent storage files'
                    ;;
-                   
                    docpad)
-                       SOURCE=$DOCPAD_SOURCE
+                       GET_PROJECT_STUB $DOCPAD_SOURCE $APP
+                       cd $APP
+	                   docpad init
+	                   git add .
+	                   git commit -m 'Initial'
                    ;;
+                   other)
+                      mkdir $APP
+                      cd $APP
+                      git init
+                   ;;
+                   *)
+                        echo "----! Unknown app type"
+                        exit 0
+                    ;;
                 esac
 
-	            if [ -z $SOURCE ]; then
-                    echo "----! Unknown app type"
-                    exit 1
-                fi
 
-    		    echo "----> Start creating $2 app"
-	            git clone $SOURCE $3
+                echo $APP>PROJECT_NAME
+	            git add PROJECT_NAME
+	            git commit -m 'Added project name file'
 
- 	            cd $APP
-
-                if [ $2 = "wp" ]; then
-
-	                echo "/home/dokku/.storages/$APP:/app/content/uploads:rw">PERSISTENT_STORAGE
-	                echo $APP>PROJECT_NAME
-	                
-	                git add PROJECT_NAME PERSISTENT_STORAGE
-	                git commit -m 'Added project name and persistent storage files'
-                fi
-
-                if [ $2 = "docpad" ]; then
-	                echo $APP>PROJECT_NAME
-	                docpad init
-	                git add .
-	                git commit -m 'Initial'
-                fi
-
-                git remote add dev dokku@$DEV_HOST:$APP-$USER_NAME
-                git remote add prod dokku@$PROD_HOST:$APP-PROD
-                git remote add testing dokku@$TEST_HOST:$APP
                 echo "----> $APP created"
             fi
         fi
@@ -89,18 +83,30 @@ case "$1" in
         echo "----! You must specify type"
         exit 1
     fi
-    TYPE=$2
+    if [ $2 = '--global' ] && [ -z $3 ] || [ $2 != 'user' ]; then
+        TYPE=$3
+        PARAM=$4
+        SAVE_DIR="./.duplo"
+    else
+        TYPE=$2
+        PARAM=$3
+        SAVE_DIR=$CONF_DIR
+    fi
+
     if [ $TYPE != "dev" ] && [ $TYPE != "testing" ] && [ $TYPE != "prod" ] && [ $TYPE != "user" ]; then
         echo "----! Unknown config type"
     fi
-    if [ -z $3 ]; then
+
+    if [ -z $PARAM ]; then
         echo "----! You must specify param"
         exit 1
     fi
-    if [ ! -d $CONF_DIR ]; then
-        mkdir -p $CONF_DIR
+
+    if [ ! -d $SAVE_DIR ]; then
+        mkdir -p $SAVE_DIR
     fi
-    echo $3 > $CONF_DIR/$TYPE
+    
+    echo $PARAM > $SAVE_DIR/$TYPE
   ;;
 
   config:get)
@@ -113,6 +119,14 @@ case "$1" in
         echo "----! Unknown config type"
     fi
     
+    if [ -d './.duplo' ]; then
+        if [ ! -f "./.duplo/$TYPE" ];then
+            CONF=$(cat "$CONF_DIR/$TYPE")
+            echo "$CONF"
+            exit 0
+        fi
+    fi
+    
     if [ ! -f "$CONF_DIR/$TYPE" ]; then
         echo "no params"
         exit 0;
@@ -122,8 +136,17 @@ case "$1" in
   ;;
 
   deploy:dev)
+    CHECK_DEV=$(git remote show | grep dev)
     APP=$(cat PROJECT_NAME)
-    
+    if [ -z $CHECK_DEV ]; then
+        DEV_URL = $(duplo config:get dev)
+        if [ $DEV_URL != 'no params' ]; then
+            git remote add dev dokku@$DEV_HOST:$APP-$USER_NAME
+        else
+            echo "----! Please set dev url!"
+        fi
+    fi
+
     if [ -f "./wp-config.php" ]; then
         sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-$USER_NAME.tadatuta.org');|" wp-config.php
         sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-$USER_NAME.tadatuta.org/wp');|" wp-config.php
@@ -143,7 +166,17 @@ case "$1" in
   ;;
 
   deploy:testing)
+    CHECK_TESTING=$(git remote show | grep testing)
     APP=$(cat PROJECT_NAME)
+    if [ -z $CHECK_TESTING ]; then
+        TEST_URL = $(duplo config:get testing)
+        if [ $TEST_URL != 'no params' ]; then
+            git remote add testing dokku@$TEST_URL:$APP
+        else
+            echo "----! Please set testing url!"
+        fi
+    fi
+
     if [ -f "./wp-config.php" ]; then
         sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP.tadatuta.org/wp');|" wp-config.php
         sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP.tadatuta.org');|" wp-config.php
@@ -166,10 +199,21 @@ case "$1" in
         exit 0
     fi
 
+    CHECK_PROD=$(git remote show | grep prod)
+    APP=$(cat PROJECT_NAME)
+    if [ -z $CHECK_DEV ]; then
+        PROD_URL = $(duplo config:get dev)
+        if [ $PROD_URL != 'no params' ]; then
+            git remote add dev dokku@$PROD_HOST:$APP-PROD
+        else
+            echo "----! Please set production url!"
+        fi
+    fi
+
     if [ -f "./wp-config.php" ]; then
         sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$2/wp');|" wp-config.php
         sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$2');|" wp-config.php
-    
+
         git add wp-config.php
         git commit -m 'Changed url to production' || echo "----> Production urls'"
     fi
@@ -182,7 +226,7 @@ case "$1" in
   ;;
   
   help)   
-    echo "duplo config:set <type> <url|name>      type - <dev|testing|user|prod>"
+    echo "duplo config:set <type> <url|name>      type - <dev|testing|user|prod>  ---global - to set global params"
     echo "duplo config:get <type>                 type - <dev|testing|user|prod>"
     echo "duplo create <appType> <appName>        creates projects appType-<wp|docpad>"
     echo "duplo deploy:dev                	     deploys app in current folder type to development server"
