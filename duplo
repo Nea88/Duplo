@@ -76,7 +76,7 @@ case "$1" in
                 fi
 
                 git remote add dev dokku@$DEV_HOST:$APP-$USER_NAME
-                git remote add prod dokku@$PROD_HOST:$APP
+                git remote add prod dokku@$PROD_HOST:$APP-PROD
                 git remote add testing dokku@$TEST_HOST:$APP
                 echo "----> $APP created"
             fi
@@ -178,7 +178,7 @@ case "$1" in
     git add "./DOMAINS"
     git commit -m 'domains file added'
     echo "Added domains file"
-    git push production master
+    git push prod master
   ;;
   
   help)   
