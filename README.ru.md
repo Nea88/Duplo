@@ -5,28 +5,38 @@
 Установка:
 windows:
 
-`$cp duplo /bin`
+```
+$git clone https://github.com/Nea88/dokku_wp_deploy_plugin/blob/master/README.md
+$cd duplo
+$cp duplo /bin
+```
 
 linix:
 
-`$sh duplo-install`
+```
+$git clone https://github.com/Nea88/dokku_wp_deploy_plugin/blob/master/README.md
+$cd duplo
+$sh duplo-install
+```
 
 ##Использование:
 
 `duplo config:set <type> <url|name>      type - <dev|testing|prod|user>`
-устанавливает параметры: урл dev/production/testing серверов соответствено, а также имя юзера, от имени которго собираются дев сборки
+устанавливает параметры: url dev/production/testing серверов соответствено, а также имя юзера, от имени которго собираются дев сборки
+Ключ --global устанавливает параметры глобально для всех проектов. Параметры для проектаимеют больштй приоритет. 
+Параметр user - глобальный по умолчанию.
 
 Пример:
 
 ```
 $duplo config:set user ivan
-$duplo config:set dev bla.com
+$duplo config:set --global dev bla.com
 ```
 
 
 `duplo config:get <type>                 type - <dev|testing|prod|user>` выводит текущее значение параметра
 
-`duplo create <appType> <appName>        creates projects appType-<wp|docpad>` создает типовой проект
+`duplo create <appType> <appName>        creates projects appType-<wp|docpad|other>` создает типовой проект
 
 Пример:
 ```
