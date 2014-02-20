@@ -6,7 +6,7 @@
 windows:
 
 ```
-$git clone https://github.com/Nea88/dokku_wp_deploy_plugin/blob/master/README.md
+$git clone https://github.com/Nea88/Duplo.git
 $cd duplo
 $cp duplo /bin
 ```
@@ -14,7 +14,7 @@ $cp duplo /bin
 linix:
 
 ```
-$git clone https://github.com/Nea88/dokku_wp_deploy_plugin/blob/master/README.md
+$git clone https://github.com/Nea88/Duplo.git
 $cd duplo
 $sh duplo-install
 ```
