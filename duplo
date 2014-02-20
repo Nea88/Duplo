@@ -21,8 +21,10 @@ fi
 
 GET_PROJECT_STUB()
 {
-git clone $1 $2
+    git clone $1 $2
 }
+
+PUSH_PRO
 
 case "$1" in
 
@@ -141,7 +143,7 @@ case "$1" in
     if [ -z $CHECK_DEV ]; then
         DEV_URL = $(duplo config:get dev)
         if [ $DEV_URL != 'no params' ]; then
-            git remote add dev dokku@$DEV_HOST:$APP-$USER_NAME
+            git remote add dev dokku@$DEV_URL:$APP-$USER_NAME
         else
             echo "----! Please set dev url!"
         fi
@@ -204,7 +206,7 @@ case "$1" in
     if [ -z $CHECK_DEV ]; then
         PROD_URL = $(duplo config:get dev)
         if [ $PROD_URL != 'no params' ]; then
-            git remote add dev dokku@$PROD_HOST:$APP-PROD
+            git remote add dev dokku@$PROD_URLH:$APP-PROD
         else
             echo "----! Please set production url!"
         fi
@@ -225,13 +227,44 @@ case "$1" in
     git push prod master
   ;;
   
+  deploy)
+    if [ -z $2 ]; then
+        echo "----! You must specify domain"
+        exit 0
+    fi
+
+    CHECK_CUSTOM=$(git remote show | grep custom)
+    APP=$(cat PROJECT_NAME)
+    if [ -z $CHECK_CUSTOM ]; then
+        CUSTOM_URL = $2
+        git remote add custom $CUSTOM_URL
+    else
+        git remote rm custom
+        git remote add custom $CUSTOM_URL
+    fi
+
+    if [ -f "./wp-config.php" ]; then
+        if [ -z $3 ]; then
+            echo "----! Specifi site domain"
+            exit 0
+        fi
+
+        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$3/wp');|" wp-config.php
+        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$23');|" wp-config.php
+
+        git add wp-config.php
+        git commit -m 'Changed url to production' || echo "----> Production urls'"
+    fi
+  ;;
+
   help)   
     echo "duplo config:set <type> <url|name>      type - <dev|testing|user|prod>  ---global - to set global params"
     echo "duplo config:get <type>                 type - <dev|testing|user|prod>"
     echo "duplo create <appType> <appName>        creates projects appType-<wp|docpad>"
-    echo "duplo deploy:dev                	     deploys app in current folder type to development server"
-    echo "duplo deploy:testing                    deploys app in current folder type to testing server"
-    echo "duplo deploy:prod <prod domains>        deploys app in current folder type to production server"
+    echo "duplo deploy:dev                        deploys app from current folder type to development server"
+    echo "duplo deploy:testing                    deploys app from current folder type to testing server"
+    echo "duplo deploy:prod <prod domains>        deploys app from current folder type to production server"
+    echo "duplo deploy <git_url> <domain>         deploys app from current folder to custom place <git_url> -user@domain:project_name <domain> -for wp"
   ;;
 
 esac
