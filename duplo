@@ -24,8 +24,6 @@ GET_PROJECT_STUB()
     git clone $1 $2
 }
 
-PUSH_PRO
-
 case "$1" in
 
   create)
@@ -138,15 +136,12 @@ case "$1" in
   ;;
 
   deploy:dev)
-    CHECK_DEV=$(git remote show | grep dev)
     APP=$(cat PROJECT_NAME)
-    if [ -z $CHECK_DEV ]; then
-        DEV_URL = $(duplo config:get dev)
-        if [ $DEV_URL != 'no params' ]; then
-            git remote add dev dokku@$DEV_URL:$APP-$USER_NAME
-        else
-            echo "----! Please set dev url!"
-        fi
+    git remote show dev || if [ $(duplo config:get dev)!='no params' ]; then
+        git remote add dev dokku@$(duplo config:get dev):$APP-$USER_NAME
+    else
+        echo "----! Please set dev url!"
+        exit 0
     fi
 
     if [ -f "./wp-config.php" ]; then
@@ -168,15 +163,13 @@ case "$1" in
   ;;
 
   deploy:testing)
-    CHECK_TESTING=$(git remote show | grep testing)
     APP=$(cat PROJECT_NAME)
-    if [ -z $CHECK_TESTING ]; then
-        TEST_URL = $(duplo config:get testing)
-        if [ $TEST_URL != 'no params' ]; then
-            git remote add testing dokku@$TEST_URL:$APP
-        else
-            echo "----! Please set testing url!"
-        fi
+
+    git remote show testing || if [ $(duplo config:get testing)!='no params' ]; then
+        git remote add dev dokku@$(duplo config:get testing):$APP-test
+    else
+        echo "----! Please set testing url!"
+        exit 0
     fi
 
     if [ -f "./wp-config.php" ]; then
@@ -201,15 +194,12 @@ case "$1" in
         exit 0
     fi
 
-    CHECK_PROD=$(git remote show | grep prod)
     APP=$(cat PROJECT_NAME)
-    if [ -z $CHECK_DEV ]; then
-        PROD_URL = $(duplo config:get dev)
-        if [ $PROD_URL != 'no params' ]; then
-            git remote add dev dokku@$PROD_URLH:$APP-PROD
-        else
-            echo "----! Please set production url!"
-        fi
+    git remote show prod || if [ $(duplo config:get prod)!='no params' ]; then
+        git remote add dev dokku@$(duplo config:get prod):$APP-prod
+    else
+        echo "----! Please set production url!"
+        exit 0
     fi
 
     if [ -f "./wp-config.php" ]; then
@@ -233,15 +223,8 @@ case "$1" in
         exit 0
     fi
 
-    CHECK_CUSTOM=$(git remote show | grep custom)
     APP=$(cat PROJECT_NAME)
-    if [ -z $CHECK_CUSTOM ]; then
-        CUSTOM_URL = $2
-        git remote add custom $CUSTOM_URL
-    else
-        git remote rm custom
-        git remote add custom $CUSTOM_URL
-    fi
+    git remote add custom dokku@$2:$3
 
     if [ -f "./wp-config.php" ]; then
         if [ -z $3 ]; then
@@ -250,11 +233,13 @@ case "$1" in
         fi
 
         sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$3/wp');|" wp-config.php
-        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$23');|" wp-config.php
+        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$3');|" wp-config.php
 
         git add wp-config.php
         git commit -m 'Changed url to production' || echo "----> Production urls'"
     fi
+    git push custom master
+    git remote rm custom
   ;;
 
   help)   
