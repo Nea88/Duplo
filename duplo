@@ -166,15 +166,15 @@ case "$1" in
     APP=$(cat PROJECT_NAME)
 
     git remote show testing || if [ $(duplo config:get testing)!='no params' ]; then
-        git remote add dev dokku@$(duplo config:get testing):$APP-test
+        git remote add testing dokku@$(duplo config:get testing):$APP-testing
     else
         echo "----! Please set testing url!"
         exit 0
     fi
 
     if [ -f "./wp-config.php" ]; then
-        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP.tadatuta.org/wp');|" wp-config.php
-        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP.tadatuta.org');|" wp-config.php
+        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-testing.tadatuta.org/wp');|" wp-config.php
+        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-testing.tadatuta.org');|" wp-config.php
 
         git add wp-config.php
         git commit -m 'Changed url to testing' || echo "----> Testing urls'"
