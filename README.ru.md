@@ -3,15 +3,6 @@
 ##Клиентский скрипт для создания и деплоя проектов используя dokku.
 
 Установка:
-windows:
-
-```
-$git clone https://github.com/Nea88/Duplo.git
-$cd duplo
-$cp duplo /bin
-```
-
-linix:
 
 ```
 $git clone https://github.com/Nea88/Duplo.git
