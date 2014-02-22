@@ -4,13 +4,10 @@
 *now working only with wordpress && docpad
 
 Install:
-windows:
-
-`$cp duplo /bin`
-
-linix:
-
-`$sh duplo-install`
+```
+$cd Duplo
+$sh duplo-install
+```
 
 ##Using:
 
