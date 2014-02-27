@@ -1,5 +1,5 @@
 #/!/bin/bash
-set -e; 
+set -e;
 
 WP_SOURCE="https://github.com/Nea88/wordpress-skeleton.git"
 DOCPAD_SOURCE="https://github.com/Nea88/docpad-duplo.git"
@@ -57,7 +57,7 @@ case "$1" in
 	                   git commit -m 'Initial'
                    ;;
                    other)
-                      mkdir $APP
+                      mkdir -p $APP
                       cd $APP
                       git init
                    ;;
@@ -105,7 +105,7 @@ case "$1" in
     if [ ! -d $SAVE_DIR ]; then
         mkdir -p $SAVE_DIR
     fi
-    
+
     echo $PARAM > $SAVE_DIR/$TYPE
   ;;
 
@@ -118,7 +118,7 @@ case "$1" in
     if [ $TYPE != "dev" ] && [ $TYPE != "testing" ] && [ $TYPE != "prod" ] && [ $TYPE != "user" ]; then
         echo "----! Unknown config type"
     fi
-    
+
     if [ -d './.duplo' ]; then
         if [ ! -f "./.duplo/$TYPE" ];then
             CONF=$(cat "$CONF_DIR/$TYPE")
@@ -126,7 +126,7 @@ case "$1" in
             exit 0
         fi
     fi
-    
+
     if [ ! -f "$CONF_DIR/$TYPE" ]; then
         echo "no params"
         exit 0;
@@ -147,12 +147,12 @@ case "$1" in
     if [ -f "./wp-config.php" ]; then
         sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-$USER_NAME.tadatuta.org');|" wp-config.php
         sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-$USER_NAME.tadatuta.org/wp');|" wp-config.php
-        
+
         git add wp-config.php
         git commit -m 'Changed url to dev' || echo "----> Dev urls'"
 
     fi
-    
+
     if [ -f "./DOMAINS" ]; then
         git rm DOMAINS
         git commit -m 'domains file cant be in dev'
@@ -216,7 +216,7 @@ case "$1" in
     echo "Added domains file"
     git push prod master
   ;;
-  
+
   deploy)
     if [ -z $2 ]; then
         echo "----! You must specify domain"
@@ -242,7 +242,7 @@ case "$1" in
     git remote rm custom
   ;;
 
-  help)   
+  help)
     echo "duplo config:set <type> <url|name>      type - <dev|testing|user|prod>  ---global - to set global params"
     echo "duplo config:get <type>                 type - <dev|testing|user|prod>"
     echo "duplo create <appType> <appName>        creates projects appType-<wp|docpad>"
