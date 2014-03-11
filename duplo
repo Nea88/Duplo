@@ -11,14 +11,6 @@ if [ ! $1 ]; then
     exit 0
 fi
 
-if [ $1 != "config:set" ] && [ $1 != "config:get" ] && [ $1 != "help" ]; then
-    if [ ! -f "$CONF_DIR/user" ]; then
-        echo "----! User name not setted, please use duplo config:set user %user_name% or duplo help"
-        exit 0
-    else
-        USER_NAME=$(cat "$CONF_DIR/user")
-    fi
-fi
 
 GET_PROJECT_STUB()
 {
@@ -26,7 +18,6 @@ GET_PROJECT_STUB()
 }
 
 
-echo "Loading configs"
 #load configs
 if [ -f "$CONF_DIR/duplo.conf" ]; then
     . $CONF_DIR/duplo.conf
@@ -215,16 +206,19 @@ case "$1" in
 
   deploy:dev)
     APP=$(cat PROJECT_NAME)
-    git remote show dev || if [ ! -z $(duplo config:get dev) ]; then
-        git remote add dev dokku@$(duplo config:get dev):$APP-$USER_NAME
-    else
+    DEV_SERVER=$(duplo config:get dev)
+
+    git remote show dev || if [ -z "$DEV_SERVER" ]; then
         echo "----! Please set dev url!"
         exit 0
+    else
+        echo "set remotes"
+        git remote add dev dokku@$DEV_SERVER:$APP-$USER_NAME
     fi
 
     if [ -f "./wp-config.php" ]; then
         if [ -z $WP_BASE_URL ]; then
-            WP_BASE_URL=$(duplo config:get dev)
+            WP_BASE_URL=$DEV_SERVER
         fi
 
         sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-$USER_NAME.$WP_BASE_URL');|" wp-config.php
@@ -246,17 +240,18 @@ case "$1" in
 
   deploy:testing)
     APP=$(cat PROJECT_NAME)
+    TESTING_SERVER=$(duplo config:get testing)
 
-    git remote show testing || if [ ! -z $(duplo config:get testing) ]; then
-        git remote add testing dokku@$(duplo config:get testing):$APP-testing
-    else
+    git remote show testing || if [ -z "$TESTING_SERVER" ]; then
         echo "----! Please set testing url!"
         exit 0
+    else
+        git remote add testing dokku@$TESTING_SERVER:$APP-testing
     fi
 
     if [ -f "./wp-config.php" ]; then
         if [ -z $WP_BASE_URL ]; then
-            WP_BASE_URL=$(duplo config:get testing)
+            WP_BASE_URL=$TESTING_SERVER
         fi
 
         sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-testing.$WP_BASE_URL');|" wp-config.php
@@ -281,11 +276,12 @@ case "$1" in
     fi
 
     APP=$(cat PROJECT_NAME)
-    git remote show prod || if [ ! -z $(duplo config:get prod) ]; then
-        git remote add dev dokku@$(duplo config:get prod):$APP-prod
-    else
+    PROD_SERVER=$(duplo config:get prod)
+    git remote show prod || if [ -z "$PROD_SERVER" ]; then
         echo "----! Please set production url!"
         exit 0
+    else
+        git remote add dev dokku@$PROD_SERVER:$APP-prod
     fi
 
     if [ -f "./wp-config.php" ]; then
