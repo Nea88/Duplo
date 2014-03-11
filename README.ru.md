@@ -7,7 +7,7 @@
 ```
 $git clone https://github.com/Nea88/Duplo.git
 $cd Duplo
-$sh duplo-install
+$sh install-duplo
 ```
 
 ##Использование:

@@ -5,6 +5,7 @@ WP_SOURCE="https://github.com/Nea88/wordpress-skeleton.git"
 DOCPAD_SOURCE="https://github.com/Nea88/docpad-duplo.git"
 CONF_DIR="$HOME/.duplo"
 
+#check args
 if [ ! $1 ]; then
     duplo help
     exit 0
@@ -23,6 +24,17 @@ GET_PROJECT_STUB()
 {
     git clone $1 $2
 }
+
+
+echo "Loading configs"
+#load configs
+if [ -f "$CONF_DIR/duplo.conf" ]; then
+    . $CONF_DIR/duplo.conf
+fi
+
+if [ -f "./.duplo/duplo.conf" ]; then
+    . ./.duplo/duplo.conf
+fi
 
 case "$1" in
 
@@ -83,18 +95,22 @@ case "$1" in
         echo "----! You must specify type"
         exit 1
     fi
-    if [ $2 = '--global' ] && [ -z $3 ] || [ $2 != 'user' ]; then
+
+    if [ "$2" == "--global" ]; then
+        echo "global"
         TYPE=$3
         PARAM=$4
-        SAVE_DIR="./.duplo"
+        SAVE_DIR=$CONF_DIR
     else
+        echo "local"
+        if [ "$2" == "user" ]; then
+            SAVE_DIR=$CONF_DIR
+        else
+            SAVE_DIR="./.duplo"
+        fi
+
         TYPE=$2
         PARAM=$3
-        SAVE_DIR=$CONF_DIR
-    fi
-
-    if [ $TYPE != "dev" ] && [ $TYPE != "testing" ] && [ $TYPE != "prod" ] && [ $TYPE != "user" ]; then
-        echo "----! Unknown config type"
     fi
 
     if [ -z $PARAM ]; then
@@ -102,42 +118,104 @@ case "$1" in
         exit 1
     fi
 
-    if [ ! -d $SAVE_DIR ]; then
-        mkdir -p $SAVE_DIR
-    fi
+    case $TYPE in
+        dev)
+            if [ $2 == '--global' ]; then
+                GLOBAL_DEV=$PARAM
+            else
+                DEV=$PARAM
+            fi
+        ;;
+        prod)
+            if [ $2 == '--global' ]; then
+                GLOBAL_PROD=$PARAM
+            else
+                PROD=$PARAM
+            fi
+        ;;
+        testing)
+            if [ $2 == '--global' ]; then
+                GLOBAL_TESTING=$PARAM
+            else
+                TESTING=$PARAM
+            fi
+        ;;
+        user)
+            USER=$PARAM
+        ;;
+        wp_base_url)
+            WP_BASE_URL=$PARAM
+        ;;
+        *)
+            echo "----! Unknow conf type"
+            exit 0
+        ;;
+    esac
 
-    echo $PARAM > $SAVE_DIR/$TYPE
+    mkdir -p $SAVE_DIR
+    rm -f $SAVE_DIR/duplo.conf
+
+    if [ $2 == '--global' ]; then
+        echo "GLOBAL_DEV='$GLOBAL_DEV'" >> $SAVE_DIR/duplo.conf
+        echo "GLOBAL_TESTING='$GLOBAL_TESTING'" >> $SAVE_DIR/duplo.conf
+        echo "GLOBAL_PROD='$GLOBAL_PROD'" >> $SAVE_DIR/duplo.conf
+        echo "WP_BASE_URL='$WP_BASE_URL'" >> $SAVE_DIR/duplo.conf
+        echo "USER='$USER'" >> $SAVE_DIR/duplo.conf
+    else
+
+        echo "DEV='$DEV'" >> $SAVE_DIR/duplo.conf
+        echo "TESTING='$TESTING'" >> $SAVE_DIR/duplo.conf
+        echo "PROD='$PROD'" >> $SAVE_DIR/duplo.conf
+        echo "WP_BASE_URL='$WP_BASE_URL'" >> $SAVE_DIR/duplo.conf
+    fi
   ;;
 
   config:get)
     if [ -z $2 ]; then
-        echo "----! You must specify type"
+        echo "dev $DEV"
+        echo "testing $TESTING"
+        echo "production $PROD"
+        echo "user_name $USER"
+        echo "wp base url $WP_BASE_URL"
         exit 1
     fi
-    TYPE=$2
-    if [ $TYPE != "dev" ] && [ $TYPE != "testing" ] && [ $TYPE != "prod" ] && [ $TYPE != "user" ]; then
-        echo "----! Unknown config type"
-    fi
-
-    if [ -d './.duplo' ]; then
-        if [ ! -f "./.duplo/$TYPE" ];then
-            CONF=$(cat "$CONF_DIR/$TYPE")
-            echo "$CONF"
-            exit 0
-        fi
-    fi
-
-    if [ ! -f "$CONF_DIR/$TYPE" ]; then
-        echo "no params"
-        exit 0;
-    fi
-    CONF=$(cat "$CONF_DIR/$TYPE")
-    echo "$CONF"
+    case $2 in
+        dev)
+            if [ -z $DEV ]; then
+                echo "$GLOBAL_DEV"
+            else
+                echo "$DEV"
+            fi
+        ;;
+        prod)
+            if [ -z $PROD ]; then
+                echo "$GLOBAL_PROD"
+            else
+                echo "$PROD"
+            fi
+        ;;
+        testing)
+            if [ -z $TESTING ]; then
+                echo "$GLOBAL_TESTING"
+            else
+                echo "$TESTING"
+            fi
+        ;;
+        user)
+            echo "$USER"
+        ;;
+        wp_base_url)
+            echo "$WP_BASE_URL"
+        ;;
+        *)
+            echo "----! Unknow param type"
+        ;;
+    esac
   ;;
 
   deploy:dev)
     APP=$(cat PROJECT_NAME)
-    git remote show dev || if [ $(duplo config:get dev)!='no params' ]; then
+    git remote show dev || if [ ! -z $(duplo config:get dev) ]; then
         git remote add dev dokku@$(duplo config:get dev):$APP-$USER_NAME
     else
         echo "----! Please set dev url!"
@@ -145,8 +223,12 @@ case "$1" in
     fi
 
     if [ -f "./wp-config.php" ]; then
-        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-$USER_NAME.tadatuta.org');|" wp-config.php
-        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-$USER_NAME.tadatuta.org/wp');|" wp-config.php
+        if [ -z $WP_BASE_URL ]; then
+            WP_BASE_URL=$(duplo config:get dev)
+        fi
+
+        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-$USER_NAME.$WP_BASE_URL');|" wp-config.php
+        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-$USER_NAME.$WP_BASE_URL/wp');|" wp-config.php
 
         git add wp-config.php
         git commit -m 'Changed url to dev' || echo "----> Dev urls'"
@@ -165,7 +247,7 @@ case "$1" in
   deploy:testing)
     APP=$(cat PROJECT_NAME)
 
-    git remote show testing || if [ $(duplo config:get testing)!='no params' ]; then
+    git remote show testing || if [ ! -z $(duplo config:get testing) ]; then
         git remote add testing dokku@$(duplo config:get testing):$APP-testing
     else
         echo "----! Please set testing url!"
@@ -173,8 +255,12 @@ case "$1" in
     fi
 
     if [ -f "./wp-config.php" ]; then
-        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-testing.tadatuta.org/wp');|" wp-config.php
-        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-testing.tadatuta.org');|" wp-config.php
+        if [ -z $WP_BASE_URL ]; then
+            WP_BASE_URL=$(duplo config:get testing)
+        fi
+
+        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-testing.$WP_BASE_URL');|" wp-config.php
+        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-testing.$WP_BASE_URL/wp');|" wp-config.php
 
         git add wp-config.php
         git commit -m 'Changed url to testing' || echo "----> Testing urls'"
@@ -195,7 +281,7 @@ case "$1" in
     fi
 
     APP=$(cat PROJECT_NAME)
-    git remote show prod || if [ $(duplo config:get prod)!='no params' ]; then
+    git remote show prod || if [ ! -z $(duplo config:get prod) ]; then
         git remote add dev dokku@$(duplo config:get prod):$APP-prod
     else
         echo "----! Please set production url!"
@@ -243,8 +329,8 @@ case "$1" in
   ;;
 
   help)
-    echo "duplo config:set <type> <url|name>      type - <dev|testing|user|prod>  ---global - to set global params"
-    echo "duplo config:get <type>                 type - <dev|testing|user|prod>"
+    echo "duplo config:set <type> <url|name>      type - <dev|testing|user|prod|wp_base_url>  ---global - to set global params"
+    echo "duplo config:get <type>                 type - <dev|testing|user|prod|wp_base_url>"
     echo "duplo create <appType> <appName>        creates projects appType-<wp|docpad>"
     echo "duplo deploy:dev                        deploys app from current folder type to development server"
     echo "duplo deploy:testing                    deploys app from current folder type to testing server"
