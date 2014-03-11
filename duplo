@@ -37,27 +37,27 @@ case "$1" in
         if [ -z $3 ]; then
             echo "----! You must specify an app type"
             exit 1
-    	else
+        else
             if [ -d "./$3" ]; then
                 echo "---->App is already exist"
-    	        exit 1
-   	        else
+                exit 1
+            else
                 APP=$3
                 case $2 in
                     wp)
-            	       GET_PROJECT_STUB $WP_SOURCE $APP
-            	       cd $APP
-	                   echo "/home/dokku/.storages/$APP:/app/content/uploads:rw">PERSISTENT_STORAGE
+                       GET_PROJECT_STUB $WP_SOURCE $APP
+                       cd $APP
+                       echo "/home/dokku/.storages/$APP:/app/content/uploads:rw">PERSISTENT_STORAGE
 
-	                   git add PERSISTENT_STORAGE
-	                   git commit -m 'Added persistent storage files'
+                       git add PERSISTENT_STORAGE
+                       git commit -m 'Added persistent storage files'
                    ;;
                    docpad)
                        GET_PROJECT_STUB $DOCPAD_SOURCE $APP
                        cd $APP
-	                   docpad init
-	                   git add .
-	                   git commit -m 'Initial'
+                       docpad init
+                       git add .
+                       git commit -m 'Initial'
                    ;;
                    other)
                       mkdir -p $APP
@@ -72,8 +72,8 @@ case "$1" in
 
 
                 echo $APP>PROJECT_NAME
-	            git add PROJECT_NAME
-	            git commit -m 'Added project name file'
+                git add PROJECT_NAME
+                git commit -m 'Added project name file'
 
                 echo "----> $APP created"
             fi
@@ -213,7 +213,7 @@ case "$1" in
         exit 0
     else
         echo "set remotes"
-        git remote add dev dokku@$DEV_SERVER:$APP-$USER_NAME
+        git remote add dev dokku@$DEV_SERVER:$APP-$USER
     fi
 
     if [ -f "./wp-config.php" ]; then
@@ -221,8 +221,8 @@ case "$1" in
             WP_BASE_URL=$DEV_SERVER
         fi
 
-        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-$USER_NAME.$WP_BASE_URL');|" wp-config.php
-        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-$USER_NAME.$WP_BASE_URL/wp');|" wp-config.php
+        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-$USER.$WP_BASE_URL');|" wp-config.php
+        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-$USER.$WP_BASE_URL/wp');|" wp-config.php
 
         git add wp-config.php
         git commit -m 'Changed url to dev' || echo "----> Dev urls'"
