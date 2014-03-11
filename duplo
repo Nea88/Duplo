@@ -241,7 +241,7 @@ case "$1" in
         echo "Removed domains file"
     fi
 
-    #git push dev master
+    git push dev master
   ;;
 
   deploy:testing)
@@ -271,7 +271,7 @@ case "$1" in
         git commit -m 'domains file cant be in dev'
         echo "Removed domains file"
     fi
-    #git push testing master
+    git push testing master
   ;;
 
   deploy:prod)
@@ -300,7 +300,7 @@ case "$1" in
     git add "./DOMAINS"
     git commit -m 'domains file added'
     echo "Added domains file"
-    #git push prod master
+    git push prod master
   ;;
 
   deploy)
@@ -324,7 +324,7 @@ case "$1" in
         git add wp-config.php
         git commit -m 'Changed url to production' || echo "----> Production urls'"
     fi
-    #git push custom master
+    git push custom master
     git remote rm custom
   ;;
 
