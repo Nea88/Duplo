@@ -223,8 +223,8 @@ case "$1" in
             WP_BASE_URL=$DEV_SERVER
         fi
 
-        sed -i ./wp-config.php -e "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-$USER.$WP_BASE_URL');|" 
-        sed -i ./wp-config.php -e "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-$USER.$WP_BASE_URL/wp');|"
+        sed -i'' ./wp-config.php -e "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-$USER.$WP_BASE_URL');|" 
+        sed -i'' ./wp-config.php -e "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-$USER.$WP_BASE_URL/wp');|"
 
         git add wp-config.php
         git commit -m 'Changed url to dev' || echo "----> Dev urls'"
