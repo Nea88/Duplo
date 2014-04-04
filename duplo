@@ -208,12 +208,14 @@ case "$1" in
     APP=$(cat PROJECT_NAME)
     DEV_SERVER=$(duplo config:get dev)
 
-    git remote show dev || if [ -z "$DEV_SERVER" ]; then
-        echo "----! Please set dev url!"
-        exit 0
-    else
-        echo "set remotes"
-        git remote add dev dokku@$DEV_SERVER:$APP-$USER
+    if [ -z $(git config --get remote.dev.url) ]; then
+        if [ -z "$DEV_SERVER" ]; then
+            echo "----! Please set dev url!"
+            exit 0
+        else
+            echo "set remotes"
+            git remote add dev dokku@$DEV_SERVER:$APP-$USER
+        fi
     fi
 
     if [ -f "./wp-config.php" ]; then
@@ -242,11 +244,13 @@ case "$1" in
     APP=$(cat PROJECT_NAME)
     TESTING_SERVER=$(duplo config:get testing)
 
-    git remote show testing || if [ -z "$TESTING_SERVER" ]; then
-        echo "----! Please set testing url!"
-        exit 0
-    else
-        git remote add testing dokku@$TESTING_SERVER:$APP-testing
+    if [ -z $(git config --get remote.testing.url) ]; then
+        if [ -z "$TESTING_SERVER" ]; then
+            echo "----! Please set testing url!"
+            exit 0
+        else
+            git remote add testing dokku@$TESTING_SERVER:$APP-testing
+        fi
     fi
 
     if [ -f "./wp-config.php" ]; then
@@ -263,7 +267,7 @@ case "$1" in
 
     if [ -f "./DOMAINS" ]; then
         git rm DOMAINS
-        git commit -m 'domains file cant be in dev'
+        git commit -m 'domains file cant be in testing'
         echo "Removed domains file"
     fi
     git push testing master
@@ -277,11 +281,14 @@ case "$1" in
 
     APP=$(cat PROJECT_NAME)
     PROD_SERVER=$(duplo config:get prod)
-    git remote show prod || if [ -z "$PROD_SERVER" ]; then
-        echo "----! Please set production url!"
-        exit 0
-    else
-        git remote add dev dokku@$PROD_SERVER:$APP-prod
+    
+    if [ -z $(git config --get remote.prod.url) ]; then
+        if [ -z "$PROD_SERVER" ]; then
+            echo "----! Please set production url!"
+            exit 0
+        else
+            git remote add prod dokku@$PROD_SERVER:$APP-prod
+        fi
     fi
 
     if [ -f "./wp-config.php" ]; then
