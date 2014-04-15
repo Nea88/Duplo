@@ -258,8 +258,8 @@ case "$1" in
             WP_BASE_URL=$TESTING_SERVER
         fi
 
-        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-testing.$WP_BASE_URL');|" wp-config.php
-        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-testing.$WP_BASE_URL/wp');|" wp-config.php
+        sed -i.bak -e "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$APP-testing.$WP_BASE_URL');|" ./wp-config.php
+        sed -i.bak -e "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$APP-testing.$WP_BASE_URL/wp');|" ./wp-config.php
 
         git add wp-config.php
         git commit -m 'Changed url to testing' || echo "----> Testing urls'"
@@ -292,8 +292,8 @@ case "$1" in
     fi
 
     if [ -f "./wp-config.php" ]; then
-        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$2/wp');|" wp-config.php
-        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$2');|" wp-config.php
+        sed -i.bak -e "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$2/wp');|" ./wp-config.php
+        sed -i.bak -e "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$2');|" ./wp-config.php
 
         git add wp-config.php
         git commit -m 'Changed url to production' || echo "----> Production urls'"
@@ -321,8 +321,8 @@ case "$1" in
             exit 0
         fi
 
-        sed -i "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$3/wp');|" wp-config.php
-        sed -i "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$3');|" wp-config.php
+        sed -i.bak -e "s|^define('WP_HOME'.*|define('WP_HOME', 'http://$3/wp');|" ./wp-config.php
+        sed -i.bak -e "s|^define('WP_SITEURL'.*|define('WP_SITEURL', 'http://$3');|" ./wp-config.php
 
         git add wp-config.php
         git commit -m 'Changed url to production' || echo "----> Production urls'"
